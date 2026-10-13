@@ -7,8 +7,19 @@ on:
   pull_request:
 
 jobs:
-  hello:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Cetak hello
-        run: echo "Hello dari Github Actions!"
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Pasang Python
+        uses: actions/setup-python@v5
+        with:
+           python-version: "3.12"
+
+      - name: Install liblary
+        run:  pip install -r requirements.txt
+
+      - name: Jalankan pytest
+        run: pytest 
