@@ -4,4 +4,4 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 5000
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]
+CMD ["sh", "-c", "python -c 'from app import app; from database import db; ctx = app.app_context(); ctx.push(); db.create_all()' && flask db stamp head && gunicorn -b 0.0.0.0:${PORT:-5000} app:app"]
