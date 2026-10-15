@@ -1,242 +1,150 @@
-📚 Book Management REST API
+# Book Management REST API
 
-REST API untuk mengelola data buku dan pengguna menggunakan Flask dan PostgreSQL.
+REST API untuk manajemen buku, dibangun dengan Flask dan PostgreSQL. Dilengkapi autentikasi JWT, rate limiting, migrasi database, Docker, dan CI/CD otomatis.
 
-Project ini dibuat sebagai project pembelajaran dan portfolio untuk menerapkan konsep backend development, REST API, authentication, authorization, database, dan API testing.
+[
 
-🚀 Features
+![CI](https://github.com/yahya-66/book-management-api/actions/workflows/ci.yml/badge.svg)
 
-- User registration
-- User login
-- Password hashing
-- JWT authentication
-- Role-based authorization ("admin" / "user")
-- CRUD buku
-- Pagination
-- Filtering berdasarkan judul dan penulis
-- Sorting data buku
-- Upload file gambar
-- PostgreSQL database
-- Swagger API documentation
-- Environment variables menggunakan ".env"
+](https://github.com/yahya-66/book-management-api/actions/workflows/ci.yml)
 
-🛠️ Tech Stack
+**Live API:** https://melodious-contentment-production-f0d6.up.railway.app
 
-- Python
-- Flask
-- Flask-SQLAlchemy
-- PostgreSQL
-- Flask-JWT-Extended
-- Werkzeug
-- Flasgger / Swagger
-- python-dotenv
-- Postman
+> Server ini berjalan di trial Railway sehingga bisa nonaktif sewaktu-waktu. Semua endpoint memakai prefix `/api`.
 
-📁 Project Structure
+## Alur CI/CD
 
+```
+GitHub → GitHub Actions (pytest) → Docker → Railway → PostgreSQL
+```
+
+1. Setiap `git push` ke `main` menjalankan GitHub Actions (pytest dengan Python 3.12 dan PostgreSQL 16).
+2. Railway membangun image dari `Dockerfile` dan men-deploy otomatis.
+3. Variabel rahasia diisi lewat dashboard Railway, bukan dari repo.
+
+## Teknologi
+
+- Flask, SQLAlchemy, Flask-Migrate (Alembic)
+- Flask-JWT-Extended (autentikasi), Flask-Limiter (rate limiting)
+- Flasgger / Swagger (dokumentasi), python-dotenv
+- PostgreSQL, Gunicorn
+- Docker, Docker Compose
+- GitHub Actions, Railway
+- Pytest, Postman
+
+## Struktur Project
+
+```
 rest-api/
-├── models/
-│   ├── buku.py
-│   └── user.py
-├── routes/
-├── services/
-├── uploads/
-├── app.py
-├── database.py
+├── .github/workflows/ci.yml   # pipeline CI
+├── migrations/                # migrasi Alembic
+├── repositories/              # akses data
+├── routes/                    # endpoint (blueprint)
+├── services/                  # logika bisnis
+├── tests/                     # pytest
+├── utils/                     # exceptions & response standar
+├── app.py                     # entry point
+├── database.py                # model (User, Buku)
+├── extensions.py              # limiter
+├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
-├── .env
 ├── .env.example
-├── .gitignore
 └── README.md
+```
 
-«⚠️ File ".env" dan folder "venv/" tidak boleh di-upload ke GitHub karena berisi konfigurasi lokal dan environment pribadi.»
+## Menjalankan Lokal dengan Docker
 
-⚙️ Installation
+1. Clone repository:
+```bash
+git clone https://github.com/yahya-66/book-management-api.git
+cd book-management-api
+```
 
-1. Clone Repository
+2. Salin file environment, lalu isi nilainya:
+```bash
+cp .env.example .env
+```
 
-git clone <URL_REPOSITORY>
-cd rest-api
+3. Jalankan API dan PostgreSQL:
+```bash
+docker compose up --build
+```
 
-2. Create Virtual Environment
+4. API tersedia di `http://localhost:5000`.
 
-python3 -m venv venv
-source venv/bin/activate
+Menghentikan: `docker compose down` (data tetap tersimpan di volume). Untuk menghapus data juga: `docker compose down -v`.
 
-3. Install Dependencies
+## Variabel Lingkungan
 
+| Variabel | Keterangan |
+|---|---|
+| `DB_USER` | Username PostgreSQL |
+| `DB_PASSWORD` | Password PostgreSQL |
+| `DB_HOST` | Host database (`db` di Docker Compose) |
+| `DB_PORT` | Port database (5432) |
+| `DB_NAME` | Nama database |
+| `JWT_SECRET_KEY` | Kunci rahasia penanda token JWT |
+
+> File `.env`, `.env.production`, dan folder `venv/` tidak boleh di-commit.
+
+## Endpoint
+
+Semua path diawali `/api`.
+
+| Method | Path | Keterangan | Token |
+|---|---|---|---|
+| POST | `/api/register` | Daftar user baru | Tidak |
+| POST | `/api/login` | Login, mendapat token JWT | Tidak |
+| POST | `/api/refresh` | Perbarui token | Ya |
+| POST | `/api/upload` | Upload file | Ya |
+| GET | `/api/users` | Daftar user | Ya |
+| GET | `/api/buku` | Daftar buku (pagination) | Ya |
+| POST | `/api/buku` | Tambah buku | Ya |
+
+Token dikirim lewat header: `Authorization: Bearer <token>`.
+
+## Contoh Penggunaan
+
+Register:
+```bash
+curl -X POST http://localhost:5000/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user1","password":"password-anda"}'
+```
+
+Login:
+```bash
+curl -X POST http://localhost:5000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"user1","password":"password-anda"}'
+```
+
+Ambil daftar buku:
+```bash
+curl http://localhost:5000/api/buku \
+  -H "Authorization: Bearer <access_token>"
+```
+
+Untuk server online, ganti `http://localhost:5000` dengan alamat Live API di atas.
+
+## Testing
+
+```bash
 pip install -r requirements.txt
+pytest
+```
 
-4. Configure Environment Variables
+Tes juga berjalan otomatis di GitHub Actions pada setiap push dan pull request.
 
-Buat file ".env" berdasarkan ".env.example".
+## Deployment
 
-DB_USER=
-DB_PASSWORD=
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=
+- **Platform:** Railway (service API + PostgreSQL terkelola).
+- **Build:** dari `Dockerfile` di repo.
+- **Start:** saat container hidup, tabel dibuat bila belum ada, lalu Gunicorn berjalan di port yang diberikan Railway (`PORT`).
+- **Auto-deploy:** setiap push ke `main`.
 
-JWT_SECRET_KEY=
+## Catatan Pengembangan
 
-Isi konfigurasi tersebut sesuai dengan PostgreSQL lokal.
-
-«⚠️ Jangan upload ".env" ke GitHub.»
-
-5. Run Application
-
-python app.py
-
-API berjalan pada:
-
-http://127.0.0.1:5000
-
-🔐 Authentication
-
-API menggunakan JWT (JSON Web Token) untuk authentication.
-
-Register
-
-POST /register
-
-Contoh request:
-
-{
-    "username": "admin",
-    "password": "password123"
-}
-
-Login
-
-POST /login
-
-Contoh request:
-
-{
-    "username": "admin",
-    "password": "password123"
-}
-
-Login akan menghasilkan JWT token.
-
-Gunakan token pada endpoint yang membutuhkan authentication:
-
-Authorization: Bearer <JWT_TOKEN>
-
-📚 Book Endpoints
-
-Method| Endpoint| Authentication| Role
-GET   | "/buku"     | JWT| User/Admin
-GET   | "/buku/<id>"| JWT| User/Admin
-POST  | "/buku"     | JWT| Admin
-PUT   | "/buku/<id>"| JWT| Admin
-DELETE| "/buku/<id>"| JWT| Admin
-
-👤 User Endpoints
-
-Method| Endpoint| Authentication| Role
-POST| "/register"| Tidak| -
-POST| "/login"   | Tidak| -
-GET | "/users"   | JWT  | Admin
-POST| "/upload"  | Tidak| -
-
-🔎 Pagination, Filtering & Sorting
-
-Endpoint "/buku" mendukung pagination, filtering, dan sorting.
-
-Pagination
-
-GET /buku?page=1&limit=5
-
-Filtering berdasarkan judul
-
-GET /buku?judul=python
-
-Filtering berdasarkan penulis
-
-GET /buku?penulis=andi
-
-Sorting
-
-GET /buku?sort=judul&order=asc
-
-Parameter dapat dikombinasikan sesuai kebutuhan.
-
-📖 API Documentation
-
-Project menggunakan Swagger untuk dokumentasi API.
-
-Swagger digunakan untuk melihat:
-
-- Endpoint
-- HTTP method
-- Parameter
-- Request
-- Response
-- Authentication
-
-🗄️ Database
-
-Project menggunakan PostgreSQL sebagai database.
-
-Database
-
-book_management
-
-Tabel utama
-
-users
-buku
-
-Flask-SQLAlchemy digunakan sebagai ORM untuk berinteraksi dengan database PostgreSQL.
-
-🧪 API Testing
-
-Endpoint API telah diuji menggunakan Postman, termasuk:
-
-- Register
-- Login
-- JWT authentication
-- User management
-- CRUD buku
-- Pagination
-- Filtering
-- Sorting
-- Upload file
-- Authorization berdasarkan role
-- Error handling
-
-🔒 Security
-
-Informasi sensitif seperti:
-
-- Database password
-- JWT secret
-- Environment configuration
-
-disimpan menggunakan ".env" dan tidak dimasukkan ke repository GitHub.
-
-File ".env" juga dimasukkan ke ".gitignore".
-
-File ".env.example" digunakan sebagai template konfigurasi tanpa menyimpan informasi sensitif.
-
-🎯 Project Goals
-
-Project ini dibuat untuk mempraktikkan:
-
-- REST API development
-- Backend programming dengan Python
-- Database management
-- PostgreSQL
-- Authentication & authorization
-- JWT
-- API testing
-- Environment variables
-- Version control dengan Git
-- Project deployment
-
-👨‍💻 Author
-
-Yahya Nizar
-
-Backend development project untuk pembelajaran dan portfolio.
+- Rate limiting memakai penyimpanan memori; untuk production sebaiknya dipindah ke Redis.
+- Cakupan test masih dasar dan bisa ditambah (login, tambah dan hapus buku).
